@@ -97,3 +97,85 @@ def skill_gap_analysis(
         "missing_skills": missing_skills,
         "recommendations": learning_recommendations
     }
+
+@router.get("/employees/{employee_id}")
+def get_employee(employee_id: int, db: Session = Depends(get_db)):
+    employee = db.query(Employee).filter(Employee.id == employee_id).first()
+
+    if not employee:
+        raise HTTPException(
+            status_code=404,
+            detail="Employee not found"
+        )
+
+    return {
+        "id": employee.id,
+        "name": employee.name,
+        "email": employee.email,
+        "department": employee.department,
+        "designation": employee.designation,
+        "experience": employee.experience,
+        "skills": employee.skills.split(", ")
+    }
+
+@router.put("/employees/{employee_id}")
+def update_employee(
+    employee_id: int,
+    employee: EmployeeCreate,
+    db: Session = Depends(get_db)
+    ):
+    
+    db_employee = db.query(Employee).filter(
+        Employee.id == employee_id
+    ).first()
+
+    if not db_employee:
+        raise HTTPException(
+            status_code=404,
+            detail="Employee not found"
+        )
+
+    db_employee.name = employee.name
+    db_employee.email = employee.email
+    db_employee.department = employee.department
+    db_employee.designation = employee.designation
+    db_employee.experience = employee.experience
+    db_employee.skills = ", ".join(employee.skills)
+
+    db.commit()
+    db.refresh(db_employee)
+
+    return {
+        "message": "Employee updated successfully",
+        "employee": {
+            "id": db_employee.id,
+            "name": db_employee.name,
+            "email": db_employee.email,
+            "department": db_employee.department,
+            "designation": db_employee.designation,
+            "experience": db_employee.experience,
+            "skills": db_employee.skills.split(", ")
+        }
+    }
+    
+@router.delete("/employees/{employee_id}")
+def delete_employee(
+    employee_id: int,
+    db: Session = Depends(get_db)
+    ):
+    employee = db.query(Employee).filter(
+        Employee.id == employee_id
+    ).first()
+
+    if not employee:
+        raise HTTPException(
+            status_code=404,
+            detail="Employee not found"
+        )
+
+    db.delete(employee)
+    db.commit()
+
+    return {
+        "message": "Employee deleted successfully"
+    }
